@@ -1,0 +1,86 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+version = sorcerVersion
+
+dependencies {
+    compile "net.jini:jsk-platform:${riverVersion}"
+    compile "net.jini:jsk-lib:${riverVersion}"
+    compile "org.apache.river:start:${riverVersion}"
+    compile "org.rioproject:rio-lib:${rioVersion}"
+    compile "org.rioproject.monitor:monitor-proxy:${rioVersion}"
+    compile "org.rioproject.cybernode:cybernode-proxy:${rioVersion}"
+    compile "org.rioproject:webster:${rioVersion}"
+    compile "com.sleepycat:je:${jeVersion}"
+    compile "org.dancres:lockmgr:${lockmgrVersion}"
+    compile "javax.inject:javax.inject:1"
+    compile "com.google.guava:guava:${guavaVersion}"
+    compile "org.codehaus.groovy:groovy-all:${groovyVersion}"
+    compile "org.codehaus.plexus:plexus-utils:${plexusVersion}"
+    compile "commons-io:commons-io:${commonsIoVersion}"
+    compile "org.apache.commons:commons-exec:${commonsExecVersion}"
+    compile project(':sorcer-dl')
+    compile files("${System.properties['java.home']}/../lib/tools.jar")
+    compile project(':webster')
+    compile project(':sorcer-resolving-loader')
+    /* Depend on Rio webster for running a test so we do not create a circular dependency on Sorcer Webster */
+    //compile "org.rioproject:webster:${rioVersion}"
+    testCompile project(':sorcer-test')
+    testCompile libs.junit
+    testRuntime libs.slf4j
+    testRuntime libs.logback
+}
+
+jar {
+    from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+        include "sorcer/**"
+        include "org/rioproject/admin/ServiceActivityProvider.class"
+		include "org/rioproject/entry/ComputeResourceInfo.class"
+        include "org/rioproject/entry/OperationalStringEntry.class"
+        include "org/rioproject/entry/ServiceInfo.class"
+        include "org/rioproject/impl/jmx/JMXConnectionUtil.class"
+        include "org/rioproject/impl/jmx/MBeanServerFactory.class"
+        include "org/rioproject/event/RemoteServiceEvent.class"
+        include "org/rioproject/resolver/ResolverException.class"
+        include "org/eclipse/jetty/**"
+        include "javax/servlet/**"
+        include "org/rioproject/web/**"
+        include "org/rioproject/tools/jetty/**"
+        include "org/rioproject/security/**"
+    }
+    manifest {
+        attributes("Implementation-Title": "SORCER Platform",
+                   "Implementation-Version": sorcerVersion)
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
+test {
+    testLogging {
+        events "passed", "skipped", "failed"/*, "standardOut", "standardError"*/
+    }
+    systemProperty "deploy.configs", "${project.projectDir.path}/src/test/resources/deploy/configs"
+    systemProperty "java.security.policy", "${project.rootDir.path}/policy/policy.all"
+}
+

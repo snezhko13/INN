@@ -1,0 +1,49 @@
+# SORCER Logging Configuration File
+# Default configuration for handlers associated with the root logger.
+# To use this configuration file, specify the parameter
+# java.util.logging.config.file on the command line, e.g.,
+# java -Djava.util.logging.config.file=sorcer.logging
+
+# Handlers installed for the root logger
+#handlers=java.util.logging.ConsoleHandler, java.util.logging.FileHandler
+
+# register SLF4JBridgeHandler as handler for the j.u.l. root logger
+handlers = org.slf4j.bridge.SLF4JBridgeHandler
+    
+# Level for the root logger - is used by any logger
+# that does not have its level set
+.level=INFO
+
+#com.sun.jini.start.level=FINEST
+
+# JavaSpace logging
+#com.sun.jini.outrigger.level=FINER
+#com.sun.jini.outrigger.proxy.level=FINER
+
+# Reggie logging
+#com.sun.jini.reggie.level=FINER
+
+# Additional loggers
+#net.jini.loader.pref.PreferredClassProvider.level=ALL
+#net.jini.jeri.tcp.client.level=FINEST
+#net.jini.jeri.BasicInvocationHandler.level=FINEST
+#net.jini.jeri.connection.ConnectionManager.level=FINEST
+#net.jini.lookup.ServiceDiscoveryManager.level=FINEST
+#net.jini.lookup.JoinManager=FINEST
+#net.jini.jrmp.JrmpExporter.level=FINER
+#net.jini.discovery.LookupDiscovery.level=FINER
+#com.sun.jini.start.service.starter.level=ALL
+
+# testing Space Dispatcher/Worker wit transactions
+#com.sun.jini.thread.TaskManager.level=ALL
+#net.jini.lease.LeaseRenewalManager.level=ALL
+#com.sun.jini.mahalo.init.level=ALL
+#com.sun.jini.mahalo.operations.level=ALL
+#com.sun.jini.mahalo.transactions.level=ALL
+#com.sun.jini.mahalo.participant.level=ALL
+
+# Jini security loggers
+#net.jini.security.integrity.level=FINER
+#net.jini.security.trust.level=FINER
+#net.jini.security.policy.level=FINER
+#net.jini.jeri.level=FINER

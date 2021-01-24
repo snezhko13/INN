@@ -1,0 +1,250 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+plugins {
+    id 'org.owasp.dependencycheck' version '5.2.2' apply false
+}
+
+/* Grab the current branch from git and append to version */
+String ref = new File(rootProject.projectDir, ".git/HEAD").text
+int ndx = ref.lastIndexOf("/")
+String branch = ref.substring(ndx+1).trim()
+String branchRef = branch.equals("master")?"":"-$branch"
+
+version = "8.8.4$branchRef"
+
+apply plugin: 'idea'
+idea {
+    project {
+        jdkName = '1.8'
+        languageLevel = '1.8'
+    }
+}
+
+task printVersion {
+    description = 'Prints the current SORCER version.'
+    doLast {
+        logger.quiet "Version: $version"
+    }
+}
+
+task printClasspath() {
+    description = 'Prints the current Java classpath.'
+    doLast {
+        println "${project.name}"
+        configurations.testRuntime.each {
+            println "--> $it"
+        }
+    }
+}
+
+// gradle wrapper --gradle-version 6.6.1 --distribution-type all
+
+ext {
+    enclaveRepo = "10.131.7.138:7001"
+    //enclaveRepo = "10.0.1.9:50001"
+    enclave = InetAddress.getLocalHost().getHostAddress().startsWith("10.131")
+}
+
+apply from: file('gradle/libraries.gradle')
+apply from: file("gradle/testProperties.gradle")
+apply from: file("gradle/utils.gradle")
+
+allprojects {
+    apply plugin: 'idea'
+    group = 'org.sorcer'
+    String user = System.properties['user.name']
+    String tmpDir = System.getenv("TMPDIR")==null?System.properties['java.io.tmpdir']:System.getenv("TMPDIR")
+    ext {
+        sorcerData = file("${tmpDir}/sorcer-${user}/data").path
+    }
+    File sorcerDataDir = file(sorcerData)
+    if(sorcerDataDir.mkdirs()) {
+        println "Created ${sorcerDataDir.path}"
+    }
+}
+
+subprojects {
+    apply from: "${rootDir}/gradle/cve.gradle"
+
+    if (project.name != "examples" && project.name != "sorcer-int-tests") {
+        apply plugin: "maven"
+        apply plugin: "maven-publish"
+
+        if (project.name != "distribution") {
+            apply plugin: "java"
+            idea {
+                module {
+                    downloadSources = true
+                    downloadJavadoc = false
+                }
+            }
+            /* Always run tests */
+            test.outputs.upToDateWhen { false }
+            /*
+             * Inject an allTest task for projects with a Test class that has a name of "test"
+             */
+            Test tester = tasks.getByName("test")
+            if (tester != null) {
+                task "allTest" {
+                    description = "Runs all tests in a project"
+                    dependsOn(test)
+                }
+            }
+            compileJava.options.encoding = 'UTF-8'
+            apply from: file("${rootProject.projectDir.path}/gradle/bootme.gradle")
+
+            publishing {
+                publications {
+                    mavenJava(MavenPublication) {
+                        from components.java
+                    }
+                }
+            }
+        }
+        publishing {
+            repositories {
+                maven {
+                    url "http://$enclaveRepo"
+                }
+            }
+        }
+        repositories {
+            mavenLocal()
+            if (!enclave) {
+                maven { url "https://dl.bintray.com/dreedyman/maven"}
+                maven { url "http://www.rio-project.org/maven2" }
+                //maven { url"http://pol.sytes.net/repository/public/" }
+                mavenCentral()
+            } else {
+                maven { url "http://$enclaveRepo" }
+            }
+        }
+    }
+}
+
+static def isAnAggregateTest(graph) {
+    return (graph.hasTask(":tests") || graph.hasTask(":allTests"))
+}
+
+static def isAnAllTest(graph, name) {
+    return (graph.hasTask(":allTests") || graph.hasTask("${name}:allTest"))
+}
+
+gradle.taskGraph.whenReady { graph ->
+    boolean runningTests = false
+    graph.getAllTasks().each { t ->
+        if(t.path.endsWith("test")) {
+            runningTests = true
+        }
+    }
+    if (runningTests) {
+        project.subprojects { project ->
+            tasks.withType(Test) {
+                if(isAnAggregateTest(graph))
+                    reports.html.enabled = true
+                // to debug Rio tests with InteliJ comment 159-163
+                if(!isAnAllTest(graph, project.path)) {
+                    useJUnit {
+                        excludeCategories 'org.sorcer.test.TestsRequiringRio'
+                    }
+                } else {
+                   if (useHttps()) {
+                       systemProperty "org.rioproject.keystore", "${rioHome}/config/security/rio-cert.ks"
+                   }
+                }
+            }
+        }
+    }
+}
+
+task tests(type: TestReport, dependsOn: "bootSorcer") {
+    description = "Aggregate test runner, runs tests that don't require Rio in the project."
+    destinationDir = file("$buildDir/reports/tests")
+
+    project.subprojects { project ->
+        tasks.withType(Test) {
+            //ignoreFailures true
+            reportOn it
+        }
+    }
+    doLast {
+        println "\nThe tests task is complete. See the results at: file://${destinationDir.path}/index.html"
+    }
+    finalizedBy("terminateSorcer")
+}
+
+task allTests(type: TestReport, dependsOn: "bootSorcerRio") {
+    description = "Aggregate test runner, runs all tests in the project."
+    destinationDir = file("$buildDir/reports/allTests")
+    project.subprojects { project ->
+        tasks.withType(Test) {
+            //ignoreFailures true
+            reportOn it
+        }
+    }
+    doLast {
+        println "\nThe allTests task is complete. See the results at: file://${destinationDir.path}/index.html"
+    }
+    finalizedBy("terminateSorcerRio")
+}
+
+if (JavaVersion.current().isJava8Compatible()) {
+    allprojects {
+        //noinspection SpellCheckingInspection
+        tasks.withType(Javadoc) {
+            // disable the crazy super-strict doclint tool in Java 8
+            //noinspection SpellCheckingInspection
+            options.addStringOption('Xdoclint:none', '-quiet')
+        }
+    }
+}
+
+/*
+ * Generate all javadocs
+ */
+task allJavadoc(type: Javadoc) {
+    options.links = ['http://docs.oracle.com/javase/8/docs/api/',
+                     'https://river.apache.org/doc/api/',
+                     'http://www.rio-project.org/apidocs']
+    exclude '**/*Test.java'
+    exclude '**/edu/*'
+    description = 'Creates SORCER API Specification, view them in build/javadoc/index.html'
+    destinationDir = new File(project.projectDir, 'build/javadoc')
+    title = "SORCER ${version}"
+}
+
+subprojects {
+    afterEvaluate {
+        def skip = ["deploy-tests", "sorcer-tester", "eol", "worker", "pml", "service", "ssb"]
+        if (plugins.hasPlugin(JavaPlugin) && !skip.contains(project.name)) {
+            // configuration here
+            rootProject.tasks.allJavadoc {
+                source += files(sourceSets.collect { srcSet -> srcSet.allJava })
+                classpath += files(sourceSets*.compileClasspath)
+            }
+
+        }
+    }
+}
+
+task javaDocZip(type: Zip, dependsOn: allJavadoc) {
+    classifier = 'javadoc'
+    from allJavadoc.destinationDir
+}
+
+
+

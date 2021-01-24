@@ -1,0 +1,86 @@
+version = sorcerVersion
+
+jar {
+	manifest {
+		attributes("Implementation-Title": "SORCER Worker Provider", "Implementation-Version": version)
+	}
+	//baseName = "worker-impl"
+	classifier = "prv"
+	dependsOn classes
+	from sourceSets.main.output
+	exclude('sorcer/worker/requestor/**')
+}
+
+task workerPrvDlJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Worker Exported Classes", "Implementation-Version": version)
+	}
+	//baseName = "worker-dl"
+    classifier = "dl"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/worker/provider/*')
+	from sourceSets.main.output
+	include('sorcer/worker/requestor/Works*')
+	from sourceSets.main.resources
+	include('sorcer.jpg')
+}
+
+task workerReqJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Worker Requestor", "Implementation-Version": version)
+	}
+	classifier = "req"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/worker/requestor/**')
+}
+
+artifacts {
+    archives workerPrvDlJar
+	archives workerReqJar
+}
+
+install.dependsOn(['workerPrvDlJar', 'workerReqJar'])
+build.dependsOn(install)
+
+dependencies { 
+	compile project(':sorcer-platform')
+    compile project(':sorcer-lib')
+    compile project(':sos-db-prv')
+	testCompile project(':sorcer-test')
+	testRuntime libs.slf4j
+    testRuntime libs.logback
+}
+
+def repoPath() {
+	return "org/sorcer/worker/${version}"
+}
+
+bootme {
+	starterConfig = file("${projectDir.path}/configs/StartAll.groovy")
+    systemProperties = ["local.repo.path" : repoPath(),
+                        "project.dir" : "${project.projectDir.path}",
+						"webster.url" : websterUrl]
+    spawn = true
+}
+
+test {
+	systemProperty "java.rmi.server.codebase",
+				   "${websterUrl}/${repoPath()}/worker-${version}-dl.jar ${websterUrl}/sorcer-dl-${version}.jar ${websterUrl}/jsk-dl-${riverVersion}.jar"
+
+	testLogging {
+		events "passed", "skipped", "failed"/*, "standardOut", "standardError"*/
+	}
+//	dependsOn([install])
+	dependsOn([install, bootme])
+	finalizedBy(haltme)
+}
+test.onlyIf{ file("${sorcerDistHome}").exists() }
+
+
+
+
+
+
+

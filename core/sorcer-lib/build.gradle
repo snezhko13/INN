@@ -1,0 +1,26 @@
+
+version = sorcerVersion
+
+jar {
+	manifest {
+		attributes("Implementation-Title": "SORCER Requestor Support", "Implementation-Version": version)
+       }
+}
+
+dependencies {
+	compile project(":webster")
+    compile	 project(':sorcer-platform')
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+artifacts {
+	archives sourcesJar
+}
+
+test {
+	systemProperty "java.security.policy", "${project.projectDir.path}/src/test/resources/policy/policy.all"
+}

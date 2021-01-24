@@ -1,0 +1,74 @@
+
+version = sorcerVersion
+
+jar {
+	manifest {
+		attributes("Implementation-Title": "SORCER Volume service bean", "Implementation-Version": version)
+	}
+	classifier = "bean"
+	dependsOn classes
+	from sourceSets.main.output
+	exclude('sorcer/pml/model/**')
+}
+
+task beanDlJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Volume bean Exported Classes", "Implementation-Version": version)
+	}
+	classifier = "dl"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/pml/provider/*')
+}
+
+task modelJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Proc-model", "Implementation-Version": version)
+	}
+    classifier = "model"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/pml/model/*')
+}
+
+artifacts {
+    archives modelJar
+}
+
+install.dependsOn(['modelJar', 'beanDlJar'])
+build.dependsOn(install)
+
+dependencies { 
+	compile project(':sorcer-platform')
+    compile project(':sorcer-lib')
+	compile project(':sos-caller')
+    compile project(':sos-db-prv')
+	compile project(':examples:sml')
+	testCompile project(':sorcer-test')
+	testRuntime libs.slf4j
+	testRuntime libs.logback
+}
+
+def repoPath() {
+	return "org/sorcer/pml/${version}"
+}
+
+bootme {
+	starterConfig = file("${projectDir.path}/configs/StartAll.groovy")
+	systemProperties = ["local.repo.path" : repoPath(), "webster.url" : websterUrl]
+//	spawn = false
+//	debug = true
+}
+
+test {
+
+	systemProperty "java.rmi.server.codebase",
+				   "${websterUrl}/${repoPath()}/pml-${version}-dl.jar ${websterUrl}/sorcer-dl-${version}.jar ${websterUrl}/jsk-dl-${riverVersion}.jar"
+
+	testLogging {
+		events "passed", "skipped", "failed"/*, "standardOut", "standardError"*/
+	}
+//	dependsOn([install])
+	dependsOn([install, bootme])
+	finalizedBy(haltme)
+}

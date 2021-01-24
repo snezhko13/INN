@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Service Modeling Language (SML)</title>
+    <style>
+        img {
+            margin: 10px;
+            max-width: 100%;
+            -webkit-transition: all 1s ease; /* Safari and Chrome */
+            -moz-transition: all 1s ease; /* Firefox */
+            -o-transition: all 1s ease; /* IE 9 */
+            -ms-transition: all 1s ease; /* Opera */
+            transition: all 1s ease;
+        }
+
+        img:hover {
+            -webkit-transform:scale(1.5); /* Safari and Chrome */
+            -moz-transform:scale(1.5); /* Firefox */
+            -ms-transform:scale(1.5); /* IE 9 */
+            -o-transform:scale(1.5); /* Opera */
+            transform:scale(1.5);
+        }
+
+        body {
+            margin: 20px;
+            font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+            font-size: 14px;
+            line-height: 20px;
+            color: #333;
+            background-color: #fff
+        }
+
+        a {
+            color: #08c;
+            text-decoration: none
+        }
+    </style>
+</head>
+<body>
+<h2>Service Modeling Language (SML)</h2>
+
+<p>
+    SML is a metamodel-based language designed for service-oriented computing. Its models, called service mograms,
+    are focused on service-orientation similarly to UML models that are focused on object-orientation. The basic
+    modeling style and rules of SML reflect functional composition. The simplified SML syntax is sketched below
+    using the customized BNF style (see the Comments section). The SORCER <a href="http://sorcersoft.org/site">project site</a>
+    contains a few hundred simple examples that allow you to learn modeling patterns along with syntax rules of SML modeling. SML
+    models are executable by the SORCER platform when sufficiently configured.
+</p>
+<p>Each of the links below will illustrate the syntax diagrams for the SML</p>
+<ul>
+    <li><a href="#Signatures">Signatures</a></li>
+    <li><a href="#Multifidelities">Multifidelities</a></li>
+    <li><a href="#Provider Services">Provider Services</a></li>
+    <li><a href="#Requests">Requests</a></li>
+    <li><a href="#Entries">Entries</a></li>
+    <li><a href="#Mograms">Mograms</a></li>
+    <li><a href="#Models">Models</a></li>
+    <li><a href="#Tasks">Tasks</a></li>
+    <li><a href="#Exertions">Exertions</a></li>
+    <li><a href="#Structured Var-Modeling">Structured Var-Modeling</a></li>
+    <li><a href="#Structured Var-Modeling Tasks">Structured Var-Modeling Tasks</a></li>
+    <li><a href="#Accessing Values and Getting Results">Accessing Values and Getting Results</a></li>
+</ul>
+
+<p>
+    This <a href="sml.g.txt">link</a> will display a context free grammar representation of the SML DSL,
+    using EBNF to document the SML DSL syntax.The syntax diagrams below have been generated from the
+    referenced EBNF. The simplified BNF notation is used to enhance functional composition notation for SO
+    metamodeling with fiType-based arguments. That means that in most cases the order or function
+    arguments does not matter and number of arguments depends on the context used.
+</p>
+<a name="Signatures"><b><big>Signatures</big></b></a>
+<p>
+    A <i>provider signature</i> is a service provider reference (handle) specified by a <i>service fiType</i>.
+    The role of provider signatures declaring provider services is similar to constructors in object-oriented
+    programming. An <i>operation signature</i> expending a <i>provider signature</i> is an executable provider service -
+    <i>exec(signature)</i>. An operation signature can be customized with the following options: signature name,
+    signature operation name (selector), provider name, implemented types, groups, locators, data context, return result
+    format, input and output connectors.
+</p>
+
+<% PROVIDER-RULES %>
+
+<a name="Multifidelities"><b><big>Multifidelities</big></b></a>
+<p>
+    <i>Fidelity</i> is defined to be “the degree to which something matches or copies something else”
+    (webster.com) or in general “adherence to fact or detail” (dictionary.com). In SML, a degree of adherence,
+    matching, or accuracy has the same meaning, though it is acknowledged they have different meanings in some
+    circles. Similarly, <i>service multifidelity</i> in a SML perspective refers to a modeling environment with multiple
+    fidelity levels for a given computing process, meaning there are different computing components or functions
+    to choose from. Fidelity and cost (or similarly accuracy and time) are positively correlated; this represents
+    a fundamental trade in modeling and design. is defined to be “the degree to which something matches or copies
+    something else” (webster.com) or in general “adherence to fact or detail” (dictionary.com). In SML,
+    a degree of adherence, matching, or accuracy has the same meaning, though it is acknowledged they have
+    different meanings in some circles. Similarly, “multifidelity” in a SML perspective refers to a modeling
+    environment with multiple fidelity levels for a given computing process, meaning there are different computing
+    components or functions to choose from. Fidelity and cost (or similarly accuracy and time) are positively
+    correlated; this represents a fundamental trade in modeling and design. . Multifidelities in SML provide a basic
+    mechanism for agility and emergent behavior of adaptive service-oriented processes.
+</p>
+<p>
+    <i>Morph fidelities</i> are observable service fidelities by a fidelity manager associated with compound services
+    (mograms).A fidelity manager takes into account observable results of executed multifidelities and by updating
+    the existing mogram fidelities upgrades the structure of a mogram as needed. When morph fidelities are associated
+    with functions called morphers, then a fidelity manager redirects its execution to morphers.
+</p>
+
+<% MULTIFIDELITY-RULES %>
+
+<hr/>
+<a name="Provider Services"><b><big>Provider Services</big></b></a>
+<p>
+    A <i>computing service</i> is the work performed in which a <i>service provider</i> (one that serves) exerts
+    acquired abilities to execute a computation. A service provider is an instance of local or remote concrete
+    service specified by a signature. Signatures, signature entries, and elementary tasks are bounded to single
+    service providers but service mograms are bound to federations of service providers in the SORCER platform
+    at runtime.</p>
+
+<% PROVIDER-SERVICES %>
+<hr/>
+<a name="Requests"><b><big>Requests</big></b></a>
+<p>Elementary service requests are called items and compound requests are called mograms. For example, signatures,
+    context entries, and service fidelities are items. Context models and exertions are mograms.
+</p>
+
+<% REQUESTS %>
+
+<hr/>
+<a name="Entries"><b><big>Entries</big></b></a>
+<p>
+    An <i>entry</i> is a functional association of a <i>path</i> and a <i>function body</i> of an underlying
+    context model. A <i>path</i> is a function name as a sequence of attributes that define modeling namespace. A body
+    of an entry specifies a return value of the entry. A body defining a function composition depends on paths of
+    other entries in the model scope.
+</p>
+
+<% ENTRIES %>
+
+<hr/>
+<a name="Mograms"><b><big>Mograms</big></b></a>
+<p>
+    <i>Mograms are compound requests</i> that specify service federations. A context model is a
+    declarative specification and an exertion is a procedural one for a dynamically bound federation of
+    collaborating service providers.
+</p>
+
+<% MOGRAMS %>
+
+ <hr/>
+<a name="Models"><b><big>Models</big></b></a>
+    <p>
+        A <i>model</i> is an aggregation of entries representing service federations as functionals.
+        A data context is composed of entries of the <i>dataEntry</i> fiType and a context model of entries of
+        the <i>contextEntry</i> fiType.
+    </p>
+
+<% MODELS %>
+
+ <hr/>
+ <a name="Tasks"><b><big>Tasks</big></b></a>
+    <p>
+        A task specifies an action of provider service or concatenation (batch) of provider services
+        processing data context.
+    </p>
+
+<% TASKS %>
+
+<hr/>
+<a name="Exertions"><b><big>Exertions</big></b></a>
+<p>
+    An exertion is a task – an elementary exertion – or a hierarchical composition of tasks and other
+    exertions – a compound exertion. Concatenated exertions (blocks), workflow exertions (jobs)
+    and a conditional exertions are compound exertions that are specified accordingly by signature,
+    data context, and component mograms with optional control strategy and execution dependencies.
+</p>
+
+<% EXERTIONS %>
+
+<hr/>
+<a name="Structured Var-Modeling"><b><big>Structured Var-Modeling</big></b></a>
+<p>
+    Var-oriented models are structured contextModels with additional specialized aggregations of multifidelity
+    varEntries (for example inputs, outputs, constraints, objectives vars, etc.), The structured var-models
+    are associated with specialized modeling tasks, for example, a response, parametric, or exploration tasks.
+    A result of executing a modeling task is, for example, a response vector for a vector of design inputs,
+    a response table for a parametric table, and exploration context for an optimization task. When declared,
+    a structured var-model can be more or less concrete. To be executed, to some degree an abstract model has
+    to be configured by specifying all vars as fully declared in a model. Aggregated var-entries in structured
+    var-models collaborate in the model accordingly to a declared fiType of structured modeling. Structured
+    var-models can be used as local or remote service providers. In either case a modeling task specifies
+    a required modeling provider with its modeling context and returns a corresponding result.
+</p>
+
+<% VAR-ORIENTED-MODELING %>
+
+<hr/>
+<a name="Structured Var-Modeling Tasks"><b><big>Structured Var-Modeling Tasks</big></b></a>
+
+<% VAR-ORIENTED-MODELING-TASKS %>
+
+<hr/>
+ <a name="Accessing Values and Getting Results"><b><big>Accessing Values and Getting Results</big></b></a>
+
+ <% ACCESSING-VALUES %>
+
+</body>
+</html>

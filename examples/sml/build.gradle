@@ -1,0 +1,153 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+version = sorcerVersion
+
+jar {
+	manifest {
+		attributes("Implementation-Title": "Service Modeling Language (SML) Arithmetic Service",
+				"Implementation-Version": version)
+	}
+}
+
+task arithmeticDlJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Service Modeling Language (SML) Exported classes",
+                   "Implementation-Version": version)
+	}
+	classifier = "dl"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/arithmetic/provider/*')
+}
+
+task arithmeticReqJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Arithmetic Requestor",
+                   "Implementation-Version": version)
+	}
+	classifier = "req"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/arithmetic/requestor/**')
+}
+
+task arithmeticPrvUiJar(type: Jar) {
+	manifest {
+		attributes("Implementation-Title": "SORCER Arithmetic Service UI",
+                   "Implementation-Version": version)
+	}
+	classifier = "ui"
+	dependsOn classes
+	from sourceSets.main.output
+	include('sorcer/arithmetic/provider/ui/**')
+}
+
+dependencies { 
+	compile project(':sorcer-platform')
+    compile project(':sorcer-lib')
+    compile project(':sos-db-prv')
+    testCompile project(':sorcer-test')
+	testRuntime "com.google.guava:guava:${guavaVersion}"
+    testRuntime libs.slf4j
+	testRuntime libs.logback
+}
+
+def deployConfigArithmetic = file("configs/arithmetic-prv.config")
+def haLocal = file("src/main/netlets/ha-job-local.ntl")
+def haRemote = file("src/main/netlets/ha-job-remote.ntl")
+
+//def deployConfigMultipler = file("configs/multiplier-prv.config")
+artifacts {
+	archives arithmeticDlJar
+	archives arithmeticReqJar
+	archives arithmeticPrvUiJar
+	archives file: haLocal, classifier: "ha-job-local"
+	archives file: haRemote, classifier: "ha-job-remote"
+	archives file: deployConfigArithmetic, classifier: "deploy"
+//	archives file: deployConfigMultipler, classifier: "deploy-multiplier"
+}
+
+install.dependsOn(['arithmeticDlJar', 'arithmeticPrvUiJar', 'arithmeticReqJar'])
+build.dependsOn(install)
+
+def repoPath() {
+    return "org/sorcer/sml/${version}"
+}
+
+bootme {
+    starterConfig = file("${projectDir.path}/configs/StartAll.groovy")
+    systemProperties = ["relative.repo.path" : repoPath(), "webster.url" : websterUrl]
+//  spawn = false
+//	debug = true
+}
+
+/*
+configbuilder {
+	codebase = "${project.group}:arithmetic:dl:$version"
+	serviceConfig = file("${project.projectDir.path}/configs/arithmetic-prv.config")
+	providerClass = 'sorcer.arithmetic.provider.impl.ArithmeticImpl'
+	configFile = deployConfig
+	jvmArgs = "-Xms512m -Xmx2g"
+}*/
+task printClasspath() {
+	description = 'Prints the current Java classpath.'
+	doLast {
+		println "${project.name}"
+		configurations.testRuntime.each {
+			println "--> $it"
+		}
+	}
+}
+
+task netlet {
+	doLast {
+		String netlet = System.getProperty("netlet")
+		if(netlet!=null) {
+			Process p = "${project.projectDir}/src/main/netlets/$netlet".execute()
+			p.consumeProcessOutput(System.out, System.err)
+			p.waitFor()
+		} else {
+			println "You must provide a netlet by using -Dnetlet="
+		}
+	}
+}
+
+//task runRequestor(type:JavaExec, dependsOn:[jar, "bootme"]) {
+task runRequestor(type:JavaExec, dependsOn:[jar]) {
+	description = 'Runs a service requestor executing a local or remote service.'
+	main = "sorcer.core.requestor.SorcerRequestor"
+	classpath = sourceSets.main.runtimeClasspath
+	systemProperty "consumer.properties", "configs/arithmetic-req.properties"
+	systemProperty "project.version", "${version}"
+	systemProperty "java.rmi.server.codebase",
+			"${websterUrl}/${repoPath()}/sml-${version}.jar ${websterUrl}/sorcer-dl-${version}.jar ${websterUrl}/jsk-dl-${riverVersion}.jar"
+	args = ["sorcer.arithmetic.requestor.ArithmeticTester", "f1"]
+//	finalizedBy (":haltme")
+}
+
+test {
+	systemProperty "java.rmi.server.codebase",
+			"${websterUrl}/${repoPath()}/sml-${version}-dl.jar ${websterUrl}/sorcer-dl-${version}.jar ${websterUrl}/jsk-dl-${riverVersion}.jar"
+
+	systemProperty "project.dir", "${project.projectDir.path}"
+	testLogging {
+		events "passed", "skipped", "failed"/*, "standardOut"*/, "standardError"
+	}
+//	dependsOn([install])
+	dependsOn([install, bootme])
+	finalizedBy(haltme)
+}

@@ -1,0 +1,392 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+import org.apache.tools.ant.filters.ReplaceTokens
+
+/* Build a distribution  */
+
+apply plugin: 'base'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+version = sorcerVersion
+group = "org.sorcer"
+
+/* Declare a custom configuration for distribution only dependencies */
+configurations {
+    distribution
+    distribution.extendsFrom(runtime)
+}
+
+dependencies {
+    ["mahalo", "outrigger", "reggie"].each { riverDep ->
+        if(riverDep!="outrigger")
+            distribution "org.apache.river:${riverDep}:$riverVersion"
+        distribution "org.apache.river:${riverDep}-dl:$riverVersion"
+    }
+    distribution "net.jini.lookup:serviceui:$riverVersion"
+    ["blitz", "blitz-dl", "blitzui"].each { blitz ->
+        distribution "org.dancres:${blitz}:$blitzVersion"
+    }
+    distribution "org.rioproject:distribution:${rioVersion}@zip"
+}
+
+ext {
+    distDir = "${project.buildDir.path}/sorcer"
+}
+
+
+task installer(dependsOn: ["distribution"]) {
+    description = "Creates a distribution and an IzPack based installer."
+    inputs.dir("${project.buildDir.path}/sorcer-${version}" as File)
+    outputs.files "${project.buildDir.path}/sorcer-${version}-installer.jar"
+
+    doFirst {
+        copy {
+            from("${projectDir.path}/izpack/") {
+                include "installer.xml"
+                filter (ReplaceTokens, tokens: [sorcerV: project.version as String] )
+            }
+            into "${project.buildDir.path}"
+        }
+    }
+
+    doLast {
+        ant.taskdef(name: 'izpack',
+                    classpath: fileTree(dir: file("${rootProject.projectDir.path}/distribution/izpack/lib"), includes: ['*.jar']).asPath,
+                    classname: 'com.izforge.izpack.ant.IzPackTask')
+
+        ant.property(name: 'app.group',   value: 'SORCER')
+        ant.property(name: 'app.name',    value: 'SORCER')
+        ant.property(name: 'app.title',   value: 'SORCER')
+        ant.property(name: 'app.version', value: version)
+        ant.property(name: 'app.subpath', value: "SORCER-$version")
+
+        ant.izpack(basedir: "${rootProject.projectDir.path}/distribution/izpack",
+                   output: "${project.buildDir.path}/sorcer-${version}-installer.jar",
+                   compression: 'deflate',
+                   compressionlevel: '9') {
+            config(file("${rootProject.projectDir.path}/distribution/build/installer.xml").text)
+        }
+    }
+}
+installer.outputs.upToDateWhen { false }
+
+def filter(project) {
+    def exclusions = [/*"sos-shell", */"examples", "sorcer-int-tests"]
+    boolean include = true
+    for(String exclude : exclusions) {
+        if(project.contains(exclude))  {
+            include = false
+            break
+        }
+    }
+    include
+}
+
+/*
+ * This will gather up and organize subproject dependencies, and resolve distribution dependencies
+ */
+task gatherDeps() {
+    description = "Gather up and organize distribution dependencies"
+
+    doLast {
+        File dir = file("${distDir}-${version}")
+        if (dir.exists()) {
+            delete dir
+            println "Removed distribution $dir"
+        }
+        println "Creating distribution $dir"
+        rootProject.subprojects.each { project ->
+            boolean include = filter(project.path)
+            if(include) {
+                println "Processing ${project.path}"
+                ["jsk, start, service-ui"  : "lib/river",
+                 "blitz, lockmgr"          : "lib/blitz",
+                 "je, xerces, xml, javax.inject, plexus-utils, jansi, commons-io, commons-exec, guava"  : "lib/common",
+                 "slf4j, logback"          : "lib/logging",
+                 "groovy"                  : "lib/common/groovy"].each {
+                    prefix, dest ->
+                    copy {
+                        from filterDeps(project, prefix, dest)
+                        into "$distDir-${version}/$dest"
+                    }
+                }
+            }
+        }
+
+        /* Copy over distribution dependencies */
+        project.configurations['distribution'].files.each { file ->
+            String dest
+            if(file.path.endsWith("distribution-${rioVersion}.zip")) {
+                copy {
+                    from(zipTree(file)) {
+                        exclude '**/examples.zip'
+                        exclude '**/docs/*'
+                        exclude '**/index.html'
+                    }
+                    into "$distDir-${version}"
+                }
+                File docs = new File("$distDir-${version}/rio-${rioVersion}/docs")
+                if(docs.exists())
+                    docs.deleteDir()
+                File hyperic = new File("$distDir-${version}/rio-${rioVersion}/lib/hyperic")
+                if(hyperic.exists())
+                    hyperic.deleteDir()
+            } else {
+                if (file.path.contains("jini") || file.path.contains("river"))
+                    dest = "lib/river"
+                else
+                    dest = "lib/blitz"
+                copy {
+                    from file
+                    into "$distDir-${version}/$dest"
+                }
+            }
+        }
+    }
+}
+
+
+def filterDeps(project, prefix, dest) {
+    project.configurations.runtime.filter {
+        String[] parts = prefix.split(",")
+        for (String part : parts) {
+            if (it.name.startsWith(part.trim())) {
+                if (!file("$distDir-${version}/$dest/$it.name").exists())
+                    return true
+                else
+                    return false
+            }
+        }
+        false
+    }
+}
+
+
+task createDistribution(dependsOn: [":sorcer-boot:install",
+                                    ":sorcer-lib:install",
+                                    ":sorcer-ui:install",
+                                    ":sorcer-test:install",
+                                    ":sos-cataloger:install",
+                                    ":sos-caller:install",
+                                    ":sos-db-prv:install",
+                                    ":sos-evalumon:install",
+                                    ":sos-exertmonitor:install",
+                                    ":sos-logger:install",
+                                    ":ssb:install",
+                                    ":webster:install",
+                                    ":sos-shell:install",
+                                    //":sorcer-resolving-loader:install",
+                                    gatherDeps]) {
+    description 'Creates a Sorcer distribution'
+    doLast {
+        File sorcerLibDir = file("$distDir-${version}/lib/sorcer/lib")
+        File sorcerDlDir = file("$distDir-${version}/lib/sorcer/lib-dl")
+        File sorcerExtDir = file("$distDir-${version}/lib/sorcer/lib-ext")
+
+        rootProject.subprojects.each { project ->
+            boolean include = filter(project.path)
+            if(include) {
+                println "Processing ${project.path}"
+                project.tasks.withType(Jar).each { jar ->
+                    File target
+                    if(!jar.archiveName.contains("sources")) {
+                        if (jar.archiveName.indexOf('dl') > 0 ||
+                            jar.archiveName.indexOf('ui') > 0) {
+                            target = sorcerDlDir
+                        } else if (jar.archiveName.startsWith('ssb-') || jar.archiveName.startsWith('webster-')) {
+                            target = sorcerExtDir
+                        } else {
+                            target = sorcerLibDir
+                        }
+                        if (file(jar.archivePath).exists()) {
+                            copy {
+                                from jar.archivePath
+                                into target
+                            }
+                        } else {
+                            println "Archive does not exist ${jar.archivePath}"
+                        }
+                    }
+                }
+            }
+        }
+
+        copy {
+            from("${project.rootProject.projectDir}") {
+                include "LICENSE.txt"
+                include "configs/apps-logback.xml"
+                include "configs/all-prv.config"
+                include "configs/all-sorcer.env"
+                include "configs/versions.properties"
+                include "configs/opstrings/**"
+                include "configs/sorcer-logging.groovy"
+                include "configs/sorcer-logging-short.groovy"
+                include "configs/sorcer.logging"
+                include "configs/standalone.sorcer.env"
+				include "configs/startup-prv.config"
+				include "configs/boot-prv.config"
+                include "configs/boot-sorcer-arv.config"
+                include "configs/boot-sorcer-arv-http.config"
+                include "configs/WebsterPrv.groovy"
+                include "configs/platform/**"
+
+                include "policy/policy.all"
+                include "policy/sorcer.policy"
+                include "bin/blitz/configs/blitz.config"
+                include "bin/jini/configs/mahalo.config"
+                include "bin/jini/configs/mahalo-boot.config"
+                include "bin/jini/configs/reggie.config"
+                include "bin/jini/configs/reggie-boot.config"
+                include "bin/rio/**"
+                include "bin/sorcer/bin/*.xml"
+                include "bin/sorcer/**.xml"
+                include "bin/sorcer/rendezvous/configs/jobber-prv.config"
+                include "bin/sorcer/rendezvous/configs/spacer-prv.config"
+                include "bin/sorcer/rendezvous/configs/concatenator-prv.config"
+                include "bin/sorcer/rendezvous/configs/all-rendezvous-prv.config"
+                include "bin/sorcer/cataloger/configs/cataloger-prv.config"
+                include "bin/sorcer/sysCaller/configs/sysCaller-prv.config"
+                include "bin/sorcer/logger/configs/logger-prv.config"
+                include "bin/sorcer/exertmonitor/configs/exertmonitor-prv.config"
+                include "bin/sorcer/exertmonitor/configs/exertmonitor-prv.properties"
+                include "bin/sorcer/exerter/configs/exerter-prv.config"
+                include "bin/sorcer/dbp/configs/dbp-prv.config"
+
+                include "bin/*.xml"
+                include "bin/nsh.bat"
+                include "bin/browser/bin/sorcer-browser.xml"
+                include "bin/browser/configs/ssb.config"
+                include "bin/browser/configs/browser-logging.groovy"
+                include "bin/browser/configs/browser-logging.properties"
+                include "bin/browser/policy/ssb.policy"
+
+                include "bin/shell/configs/*"
+                include "bin/shell/tests/*"
+                include "bin/shell/policy/shell.policy"
+                include "bin/images/**"
+            }
+            into "${distDir}-${version}"
+            rename "standalone.sorcer.env", "sorcer.env"
+        }
+
+        copy {
+            from("${project.rootProject.projectDir}") {
+                include "bin/webster/**"
+                include "bin/shell/bin/*"
+                include "bin/nsh"
+                include "bin/util/**"
+                fileMode = 0755
+            }
+            into "${distDir}-${version}"
+        }
+
+        /* Overlay Rio customizations onto Rio distribution */
+        copy {
+            from("${projectDir.path}/resources/rio")
+            into "${distDir}-${version}/rio-${rioVersion}"
+            eachFile {
+                if(it.name=="resolverConfig.groovy") {
+                    /*it.expand(rioVersion: rioVersion)*/
+                    filter { it.replace('<%rio.version%>', "${rioVersion}") }
+                }
+            }
+            /*filter { it.replace('<%rio.version%>', "${rioVersion}") }*/
+        }
+
+        /* Copy icons to bin/icons */
+        copy {
+            from("${projectDir.path}/resources/icons")
+            into "${distDir}-${version}/bin/icons"
+        }
+
+        /* Move the SLF4J logback jars out of the way and slide SLF4J JUL logging support in */
+        /*File rioLoggingLib = file("${distDir}-${version}/rio-${rioVersion}/lib/logging")
+        for(File jar : rioLoggingLib.listFiles()) {
+            if(jar.name.startsWith("logback") && !jar.isDirectory())
+                jar.delete()
+        }
+        copy {
+            from(file("${rioLoggingLib.path}/jul")) {
+                include "**//*slf4j-jdk14*.jar"
+            }
+            into rioLoggingLib
+        }*/
+        /* Create a versions.properties file based on the versions in this build */
+        Properties versionProps = new Properties()
+        File versionPropsFile = file("${distDir}-${version}/configs/versions.properties")
+        versionProps.setProperty("river.version", riverVersion)
+        versionProps.setProperty("rio.version", rioVersion)
+        versionProps.setProperty("sorcer.version", version.toString())
+        versionProps.setProperty("blitz.version", blitzVersion)
+        versionProps.setProperty("je.version", jeVersion)
+        versionProps.setProperty("commonsExec.version", commonsExecVersion)
+        versionProps.setProperty("groovy.version", groovyVersion)
+        versionProps.setProperty("slf4j.version", slf4jVersion)
+        versionProps.setProperty("logback.version", logbackVersion)
+        versionProps.setProperty("plexus.version", plexusVersion)
+        versionProps.setProperty("jansi.version", jansiVersion)
+        versionProps.setProperty("commonsio.version", commonsIoVersion)
+        versionProps.setProperty("guava.version", guavaVersion)
+        versionProps.setProperty("jffp.version", jffpVersion)
+        versionProps.setProperty("jep.version", jepVersion)
+        versionProps.setProperty("jfreechart.version", jfreechartVersion)
+        versionProps.setProperty("jcommon.version", jcommonVersion)
+        versionProps.store(versionPropsFile.newWriter(), null)
+    }
+}
+
+task distribution(type: Zip, dependsOn: [createDistribution]) {
+    description 'Creates a Sorcer distribution archive'
+    doFirst {
+        println "Zipping distribution sorcer-${version} -> sorcer-${version}.zip"
+    }
+    //compression = Compression.GZIP // for Tar type
+    baseName = "sorcer"
+    destinationDir = project.buildDir
+    from("${project.buildDir.path}/sorcer-${version}") {
+        exclude("**/bin/webster/bin/*")
+    }
+    from("${project.buildDir.path}/sorcer-${version}") {
+        include("**/bin/webster/bin/*")
+        fileMode = 0755
+    }
+    into "sorcer-${version}"
+    doLast {
+        println "Complete"
+    }
+}
+
+def sorcerDistribution = file("build/sorcer-${version}.zip")
+def propertiesConfig = file("${project.buildDir.path}/sorcer-${version}/configs/versions.properties")
+artifacts {
+    archives file: sorcerDistribution, name: 'distribution', type: 'zip', builtBy: distribution
+    archives file: propertiesConfig, classifier: "versions", type: "properties"
+}
+
+publishing {
+    publications {
+        distribution(MavenPublication) {
+            artifact sorcerDistribution
+            artifact source: propertiesConfig, classifier: "versions"
+        }
+    }
+    repositories {
+        maven { url "http://$enclaveRepo" }
+//        maven { url "file:///Users/dreedy/dev/src/projects/mstc/TEMP"}
+    }
+}
+

@@ -1,0 +1,33 @@
+
+version = sorcerVersion
+
+dependencies {
+    compile "net.jini:jsk-platform:${riverVersion}",
+            "org.rioproject:rio-lib:${rioVersion}",
+            "org.slf4j:slf4j-api:${slf4jVersion}",
+            "ch.qos.logback:logback-classic:${logbackVersion}"
+
+}
+
+jar {
+    from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }) {
+        include "org/rioproject/entry/ComputeResourceInfo.class"
+        include "org/rioproject/entry/OperationalStringEntry.class"
+        include "org/rioproject/entry/ServiceInfo.class"
+        include "org/rioproject/proxy/admin/ConstrainableServiceAdminProxy.class"
+        include "org/rioproject/proxy/admin/ServiceAdminProxy.class"
+    }
+    manifest {
+        attributes("Implementation-Title": "SORCER Exported Classes", "Implementation-Version": version)
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+	classifier = 'sources'
+	from sourceSets.main.allSource
+}
+
+artifacts {
+	archives sourcesJar
+}
+

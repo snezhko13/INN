@@ -1,0 +1,68 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+include 'sorcer-dl'
+project(":sorcer-dl").projectDir = file("core/sorcer-dl")
+include 'sorcer-platform'
+project(":sorcer-platform").projectDir = file("core/sorcer-platform")
+include 'sorcer-lib'
+project(":sorcer-lib").projectDir = file("core/sorcer-lib")
+
+include 'sorcer-test'
+project(":sorcer-test").projectDir = file("tools/sorcer-test")
+
+include 'sorcer-ui'
+project(":sorcer-ui").projectDir = file("core/sorcer-ui")
+include 'sos-shell'
+project(":sos-shell").projectDir = file("sos/sos-shell")
+include 'sos-cataloger'
+project(":sos-cataloger").projectDir = file("sos/sos-cataloger")
+include 'sos-db-prv'
+project(":sos-db-prv").projectDir = file("sos/sos-db-prv")
+include 'sos-caller'
+project(":sos-caller").projectDir = file("sos/sos-caller")
+include 'sos-evalumon'
+project(":sos-evalumon").projectDir = file("sos/sos-evalumon")
+include 'sos-exertmonitor'
+project(":sos-exertmonitor").projectDir = file("sos/sos-exertmonitor")
+include 'sos-logger'
+project(":sos-logger").projectDir = file("sos/sos-logger")
+include 'webster'
+project(":webster").projectDir = file("tools/webster")
+include 'sorcer-boot'
+project(":sorcer-boot").projectDir = file("tools/sorcer-boot")
+include 'ssb'
+project(":ssb").projectDir = file("tools/ssb")
+include 'sorcer-resolving-loader'
+project(":sorcer-resolving-loader").projectDir = file("tools/sorcer-resolving-loader")
+include 'sorcer-int-tests:sorcer-tester'
+project(":sorcer-int-tests:sorcer-tester").projectDir = file("core/sorcer-int-tests/sorcer-tester")
+include 'sorcer-int-tests:deploy-tests'
+project(":sorcer-int-tests:deploy-tests").projectDir = file("core/sorcer-int-tests/deploy-tests")
+
+include 'examples:sml'
+include 'examples:pml'
+include 'examples:worker'
+include 'examples:service'
+include 'examples:exchange'
+include 'examples:coffeemaker'
+include 'examples:greeter'
+
+include 'distribution'
+
+
+
+

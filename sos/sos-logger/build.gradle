@@ -1,0 +1,46 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+version = sorcerVersion
+
+jar {
+    manifest {
+        attributes("Implementation-Title": "SORCER Network Logger Service",
+                   "Implementation-Version": version)
+    }
+    include 'sorcer/core/provider/logger/**'
+    include 'sorcer/util/**'
+}
+
+dependencies {
+    compile project(':sorcer-platform'), project(':sorcer-ui')
+    compile "commons-io:commons-io:${commonsIoVersion}"
+}
+
+task uiJar(type: Jar) {
+    manifest {
+        attributes("Implementation-Title": "SORCER Network Logger Service UI",
+                   "Implementation-Version": version)
+    }
+    from(sourceSets.main.output) {
+        include 'sorcer/core/provider/logger/ui/**'
+        classifier = "ui"
+    }
+}
+
+artifacts {
+    archives uiJar
+}

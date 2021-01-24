@@ -1,0 +1,20 @@
+
+version = sorcerVersion
+
+jar {
+	manifest {
+		attributes("Implementation-Title": "SORCER Service Browser (SSB)", "Implementation-Version": version)
+	}
+	from sourceSets.main.output.classesDirs.filter { include "**" }
+	from sourceSets.main.resources 
+	include "html/**"
+	from sourceSets.main.resources 
+	include "rt-images/**"
+}
+
+dependencies {
+    compile project(":sorcer-platform")
+	compile "org.apache.river:outrigger-dl:${riverVersion}"
+}
+
+

@@ -1,0 +1,34 @@
+#!/usr/bin/env nsh
+/*
+* Copyright to the original author or authors.
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing, software
+* distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions and
+* limitations under the License.
+*/
+
+@Codebase(group='org.sorcer', module='sml', version='${sorcer.version}', classifier='dl')
+@Load(group='org.sorcer', module='sml', version='${sorcer.version}')
+import sorcer.arithmetic.provider.Adder
+import sorcer.arithmetic.provider.Multiplier
+import sorcer.arithmetic.provider.Subtractor
+
+Model mo = model(
+        inVal("arg/x1", 10.0d), inVal("arg/x2", 50.0d),
+        inVal("arg/x3", 20.0d), inVal("arg/x4", 80.0d),
+        ent(sig("multiply", Multiplier.class, result("result/y1",
+                inPaths("arg/x1", "arg/x2")))),
+        ent(sig("add", Adder.class, result("result/y2",
+                inPaths("arg/x3", "arg/x4")))),
+        ent(sig("out", "subtract", Subtractor.class, result("result/y3",
+                inPaths("result/y1", "result/y2")))),
+        response("out", "result/y1", "result/y2", "result/y3"));
+

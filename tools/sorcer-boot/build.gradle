@@ -1,0 +1,53 @@
+/*
+ * Copyright to the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+version = sorcerVersion
+
+dependencies {
+    compile project(':sorcer-platform')
+	compile "org.apache.river:start:${riverVersion}",
+			"org.rioproject:rio-platform:${rioVersion}",
+			"org.rioproject:rio-lib:${rioVersion}"
+    runtime libs.logback
+    runtime "org.slf4j:jul-to-slf4j:${slf4jVersion}"
+}
+
+jar {
+    from(configurations.compile.collect { it.isDirectory() ? it : zipTree(it)}) {
+        include "sorcer/core/SorcerConstants.class"
+        include "sorcer/util/SOS.class"
+        include "sorcer/core/provider/util/PropertyHelper.class"
+    }
+
+    manifest {
+        attributes("Implementation-Title": "SORCER Service Booter",
+                   "Implementation-Version": version,
+                   "Class-Path": "river/lib/start-${riverVersion}.jar river/lib/jsk-lib-${riverVersion}.jar river/lib/serviceui-${riverVersion}.jar",
+                   "Main-Class": "com.sun.jini.start.ServiceStarter",
+                   "Premain-Class": "sorcer.provider.boot.InstrumentationHook",
+                   "SORCER-Version": "${version}")
+    }
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+artifacts {
+    archives sourcesJar
+}
+
