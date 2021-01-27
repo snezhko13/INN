@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 
 /**
+ * Class that desribes single recipe with name, price and ingredients necesary.
  * @author   Sarah & Mike
  */
 public class Recipe implements Serializable {
@@ -19,7 +20,7 @@ public class Recipe implements Serializable {
     private int amtChocolate;
 
 	/**
-	 * Constructor
+	 * Constructor.
 	 * Creates a new Recipe with default values
 	 */
 	public Recipe() {
@@ -32,6 +33,8 @@ public class Recipe implements Serializable {
     }
     
     /**
+	 * Amount of chocolate.
+	 *
 	 * @return   Returns the amtChocolate.
 	 */
     public int getAmtChocolate() {
@@ -39,6 +42,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Sets new amount of chocolate. Does nothing when param 'amtChocolate' is less than 0.
+	 *
 	 * @param amtChocolate   The amtChocolate to setValue.
 	 */
     public void setAmtChocolate(int amtChocolate) {
@@ -48,6 +53,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Amount of coffee.
+	 *
 	 * @return   Returns the amtCoffee.
 	 */
     public int getAmtCoffee() {
@@ -55,6 +62,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Sets new amount of coffee. Does nothing when param 'amtCoffee' is less than 0.
+	 *
 	 * @param amtCoffee   The amtCoffee to setValue.
 	 */
     public void setAmtCoffee(int amtCoffee) {
@@ -64,6 +73,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Amount of milk.
+	 *
 	 * @return   Returns the amtMilk.
 	 */
     public int getAmtMilk() {
@@ -71,6 +82,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Sets new amount of milk. Does nothing when param 'amtMilk' is less than 0.
+	 *
 	 * @param amtMilk   The amtMilk to setValue.
 	 */
     public void setAmtMilk(int amtMilk) {
@@ -80,13 +93,17 @@ public class Recipe implements Serializable {
 	}
 
     /**
-	 * @return   Returns the amtSugar.
+	 * Amount of sugar.
+	 *
+	 * @return	Returns the amtSugar.
 	 */
     public int getAmtSugar() {
 		return amtSugar;
 	}
 
     /**
+	 * Sets new amount of sugar. Does nothing when 'amtSugar' is less than 0.
+	 *
 	 * @param amtSugar   The amtSugar to setValue.
 	 */
     public void setAmtSugar(int amtSugar) {
@@ -96,13 +113,17 @@ public class Recipe implements Serializable {
 	}
 
     /**
-	 * @return   Returns the key.
+	 * Name of the recipe.
+	 *
+	 * @return	Returns the key.
 	 */
     public String getName() {
 		return name;
 	}
 
     /**
+	 * Sets new name of the Recipe. Does nothing when param 'name' is null.
+	 *
 	 * @param name   The key to setValue.
 	 */
     public void setName(String name) {
@@ -112,6 +133,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Price of drink based on this recipe.
+	 *
 	 * @return   Returns the price.
 	 */
     public int getPrice() {
@@ -119,6 +142,8 @@ public class Recipe implements Serializable {
 	}
 
     /**
+	 * Sets new price of drink based on this recipe. Does nothing when param 'price' is less than 0.
+	 *
 	 * @param price   The price to setValue.
 	 */
     public void setPrice(int price) {
@@ -128,9 +153,10 @@ public class Recipe implements Serializable {
 	}
 
 	/**
+	 * Compares names of this instance and input Recipe instance. Returns true if names are equal.
 	 *
-	 * @param r
-	 * @return
+	 * @param r	instance of Recipe class.
+	 * @return boolean
 	 */
     public boolean equals(Recipe r) {
         if((this.name).equals(r.getName())) {
@@ -140,18 +166,20 @@ public class Recipe implements Serializable {
     }
 
 	/**
+	 * Returns name of Recipe.
 	 *
-	 * @return name
+	 * @return String
 	 */
 	public String toString() {
     	return name;
     }
 
 	/**
+	 * Creates Recipe instance from given context.
 	 *
-	 * @param context
-	 * @return r
-	 * @throws ContextException
+	 * @param context	Provided context.
+	 * @return r		Recipe obtained from context.
+	 * @throws ContextException	Exception thrown when Recipe could not be obtained.
 	 */
 	static public Recipe getRecipe(Context context) throws ContextException {
 		Recipe r = new Recipe();
@@ -170,6 +198,7 @@ public class Recipe implements Serializable {
 
 	/**
 	 * Returns the context with given recipe
+	 *
 	 * @param recipe	the context identification
 	 * @return ctx		the context for the method
 	 * @throws ContextException
