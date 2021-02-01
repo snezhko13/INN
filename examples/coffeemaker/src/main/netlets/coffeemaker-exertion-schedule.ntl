@@ -1,0 +1,24 @@
+#!/usr/bin/env nsh
+
+@Codebase(group='org.sorcer', module='coffeemaker', version='${sorcer.version}', classifier='dl')
+import.edu.pjatk.in.coffeemaker.ScheduleOrder
+import edu.pjatk.inn.coffeemaker.CoffeeService
+import edu.pjatk.inn.coffeemaker.Delivery
+
+Context espresso = context(val("key", "espresso"), val("price", 50),
+                val("amtCoffee", 6), val("amtMilk", 0),
+                val("amtSugar", 1), val("amtChocolate", 0));
+
+Context appUser = context(val(val("key", "appUser") "uid", "1234"));
+
+Task schedule = task("schedule", sig("schedule", ScheduleOrder.class), context(
+        val("recipient/appUser", appUser),
+        val("scheduledCoffee/paid", 120),
+        val("pickupTime", "12:45"));
+
+Task coffee = task("coffee", sig("makeCoffee", CoffeeService.class), context(
+        val("recipe/key", "espresso"),
+        val("coffee/paid")
+        val("recipe", espresso));
+
+job(schedule, coffee, pipe(outPoint(schedule, "pickupTime"), inPoint(coffee, "coffee/paid"));
