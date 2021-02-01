@@ -1,0 +1,39 @@
+#1
+File: 		RecipeTest.java
+Method: 	testDeleteRecipe
+Bug#1:		To delete, you must use not the object, but the name of the drink
+Bug#2:		The coffee maker should return false if nothing has been removed
+Place of 
+bug in code:	CoffeeMaker.java, line: 91
+
+
+#2
+File: 		RecipeTest.java
+Method: 	testAddRecipe
+Bug#1:		In the conditions it is written that it is permissible to add a maximum of 3 recipes, but 4th could be added
+Place of 
+bug in code:	CoffeeMaker.java, line: 25
+
+
+#3
+File: 		RecipeTest.java
+Method: 	testEditRecipe
+Bug#1:		The name of the recipe must be unique, but we can change the name of the recipe to one that already exists		
+Place of 
+bug in code:	CoffeeMaker.java lines: 126, 132
+
+
+#4
+File: 		InventoryTest.java 
+Method: 	testAddInventory
+Bug#1:		The inventory should only be reduced when making coffee		
+Place of 
+bug in code:	CoffeeMaker.java, line: 151
+
+
+#5
+File: 		InventoryTest.java 
+Method: 	testMakeCoffe
+Bug#1:		Inventory do not decrease after making coffee	
+Place of 
+bug in code:	CoffeeMaker.java, line: 187
